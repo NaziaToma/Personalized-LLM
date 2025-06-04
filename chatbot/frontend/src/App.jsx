@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-
+import Button from "react-bootstrap/Button";
 import "./App.css";
 
 function App() {
@@ -55,30 +55,33 @@ function App() {
   };
 
   return (
-    <div className="wrapper">
-      <div className="chat-wrapper">
-        <div className="chat-history">
-          <div>
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`message${message.role === "user" ? " user" : ""}`}
-              >
-                {message.role === "user" ? "Me: " : "AI: "}
-                {message.content}
-              </div>
-            ))}
+    <>
+      <Button variant="primary">Primary</Button>
+      <div className="wrapper">
+        <div className="chat-wrapper">
+          <div className="chat-history">
+            <div>
+              {messages.map((message, index) => (
+                <div
+                  key={index}
+                  className={`message${message.role === "user" ? " user" : ""}`}
+                >
+                  {message.role === "user" ? "Me: " : "AI: "}
+                  {message.content}
+                </div>
+              ))}
+            </div>
           </div>
+          <input
+            type="text"
+            placeholder="Type a message..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyUp={sendMessage}
+          />
         </div>
-        <input
-          type="text"
-          placeholder="Type a message..."
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyUp={sendMessage}
-        />
       </div>
-    </div>
+    </>
   );
 }
 

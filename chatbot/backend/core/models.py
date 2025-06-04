@@ -4,7 +4,6 @@ from core.tasks import handle_ai_request_job
 
 
 class Recipe(models.Model):
-    """Represents a recipe in the system."""
     name = models.CharField(max_length=255)
     steps = models.TextField()
 
@@ -14,8 +13,25 @@ class Recipe(models.Model):
 #AI chat session model
 
 class AiChatSession(models.Model):
+    """_summary_
+
+    Args:
+        models (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    def target_question(self):
+        """RQ1: Step 1 - Setting up a prior belief based on targeted question
+        """
+        question1 = "Do you prefer direct next steps or detailed discussion first?"
+        question1_options=["1. direct steps", "2. detailed discussion"]
+
+        question2= "Would you prefer a checklist or conversation?"
+        question2_options=["1. checklist", "2. conversation"]
     
     #last request in the session
     def get_last_request(self):
