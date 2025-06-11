@@ -3,14 +3,49 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 
-from core.models import AiChatSession
+from core.models import AiChatSession, get_default_user_profile
 from core.serializers import AiChatSessionSerializer
+
+def determine_conversation_style(choices):
+    style = "mixed"
+    
+    if choices[0] =="Direct steps" and choices[1] == "Checklist":
+        style = "action_based"
+    elif choices[0] =="Detailed discussion" and choices[1] == "Conversation":
+        style = "relationship_based"
+        
+    return style
 
 
 @api_view(['POST'])
 def create_chat_session(request):
     """Create new chat session"""
-    session = AiChatSession.objects.create()
+    # 1. Get the array of choices from the React frontend
+    user_choices = request.data.get('choices', [])
+
+    # 2. Get the default profile structure
+    profile_data = get_default_user_profile()
+
+    # 3. Determine the preferred style using our new logic
+    preferred_style = determine_conversation_style(user_choices)
+    profile_data['preferred_conversation_style'] = preferred_style
+    
+    if profile_data['preferred_conversation_style'] == "action_based":
+        profile_data["ph1"] = .90
+        profile_data["ph2"] = .10
+    elif profile_data["preferred_conversation_style"] == "relationship_based":
+        profile_data["ph1"] = .10
+        profile_data["ph2"] = .90
+    else:
+        profile_data["ph1"]=.60
+        profile_data["ph2"]=.40
+        
+    
+    # 5. Create the session with the completed profile and choices
+    session = AiChatSession.objects.create(
+        choice_results=user_choices,
+        user_profile=profile_data
+    )
     serializer = AiChatSessionSerializer(session)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 

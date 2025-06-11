@@ -2,7 +2,16 @@ from openai import OpenAI
 from django.db import models
 from core.tasks import handle_ai_request_job
 
-
+def get_default_user_profile():
+    return {
+        "preferred_conversation_style": None,
+        "ph1": None,
+        "ph2": None,
+        "peh1": None,
+        "peh2": None
+    }
+    
+    
 class Recipe(models.Model):
     name = models.CharField(max_length=255)
     steps = models.TextField()
@@ -24,14 +33,8 @@ class AiChatSession(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    def target_question(self):
-        """RQ1: Step 1 - Setting up a prior belief based on targeted question
-        """
-        question1 = "Do you prefer direct next steps or detailed discussion first?"
-        question1_options=["1. direct steps", "2. detailed discussion"]
-
-        question2= "Would you prefer a checklist or conversation?"
-        question2_options=["1. checklist", "2. conversation"]
+    choice_results = models.JSONField(default=list, blank=True)
+    user_profile = models.JSONField(default=get_default_user_profile)
     
     #last request in the session
     def get_last_request(self):
