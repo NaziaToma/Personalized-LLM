@@ -26,20 +26,23 @@ def create_chat_session(request):
     # 2. Get the default profile structure
     profile_data = get_default_user_profile()
 
-    # 3. Determine the preferred style using our new logic
-    preferred_style = determine_conversation_style(user_choices)
-    profile_data['preferred_conversation_style'] = preferred_style
+    # 3. Determine the initial style using our new logic
+    initial_style = determine_conversation_style(user_choices)
+    profile_data['preferred_conversation_style'] = initial_style
     
-    if profile_data['preferred_conversation_style'] == "action_based":
+    if initial_style == "action_based":
         profile_data["ph1"] = .90
         profile_data["ph2"] = .10
-    elif profile_data["preferred_conversation_style"] == "relationship_based":
+    elif initial_style == "relationship_based":
         profile_data["ph1"] = .10
         profile_data["ph2"] = .90
     else:
         profile_data["ph1"]=.60
         profile_data["ph2"]=.40
-        
+    
+    # --- FIXED: Set the initial posterior to equal the initial prior ---
+    profile_data["ph1e"] = profile_data["ph1"]
+    profile_data["ph2e"] = profile_data["ph2"]  
     
     # 5. Create the session with the completed profile and choices
     session = AiChatSession.objects.create(

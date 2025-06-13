@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import "./App.css";
 
 const personalizedQuestions = [
@@ -140,23 +142,38 @@ function App() {
         <div className="chat-wrapper">
           <div className="chat-history">
             <div>
+              {/* --- THIS IS THE SECTION TO FIX --- */}
               {messages.map((message, index) => (
                 <div
                   key={index}
                   className={`message${message.role === "user" ? " user" : ""}`}
                 >
-                  {message.role === "user" ? "Me: " : "AI: "}
-                  {message.content}
+                  <strong>{message.role === "user" ? "You" : "AI"}: </strong>
+                  {/* Check the role: if it's not the user, render with Markdown */}
+                  {message.role !== "user" ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {message.content}
+                    </ReactMarkdown>
+                  ) : (
+                    // Otherwise, just display the user's text as is
+                    <span>{message.content}</span>
+                  )}
                 </div>
               ))}
             </div>
           </div>
           <input
             type="text"
-            placeholder="Type a message..."
+            className="chat-input"
+            placeholder={
+              sessionId
+                ? "Type a message..."
+                : "Please answer the questions to begin."
+            }
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyUp={sendMessage}
+            disabled={!sessionId}
           />
         </div>
       </div>

@@ -1,6 +1,8 @@
 {
   "dependencies": {
     "bootstrap": "^5.3.6",
-    "react-bootstrap": "^2.10.10"
+    "react-bootstrap": "^2.10.10",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
   }
 }
