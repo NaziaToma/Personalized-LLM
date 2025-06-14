@@ -11,7 +11,8 @@ def get_default_user_profile():
         "peh2": None,
         "message_count": 0,
         "ph1e": .50, #posterior action based
-        "ph2e": .50  #posterior relationship based 
+        "ph2e": .50,  #posterior relationship based 
+        "posterior_history": []
     }
     
     
@@ -60,6 +61,9 @@ class AiChatSession(models.Model):
         self.user_profile["ph2e"] = 1 - updated_ph1e
         self.user_profile["peh1"] = new_peh1
         self.user_profile["peh2"] = new_peh2
+        
+        # NEW: Record the new posterior in our history list
+        self.user_profile["posterior_history"].append(updated_ph1e)
         
         # 5. Update the conversational style based on the new belief.
         if updated_ph1e > 0.7:
@@ -122,24 +126,33 @@ class AiChatSession(models.Model):
     
     def send(self, message):
         from core.tasks import update_user_profile_task
-        if self.user_profile.get("message_count", 0) < 5:
-            self.user_profile["message_count"] += 1
-            self.save()
-            update_user_profile_task.delay(self.id, message)
+        """
+        Handles sending a message and orchestrating the cyclical learning process.
+        """
+        # --- UPDATED LOGIC FOR CYCLICAL LEARNING ---
+        # Increment the counter first
+        self.user_profile["message_count"] += 1
+        self.save()
+        
+        # Always trigger the analysis for the current message
+        update_user_profile_task.delay(self.id, message)
+        from core.tasks import final_style_determination_task
+        # Check if this message completes a 5-message cycle
+        if self.user_profile["message_count"] >= 5:
+            # Trigger the final determination task which will also reset the count
+            final_style_determination_task.apply_async(args=[self.id], countdown=5)
 
+        # The rest of the send logic remains the same
         last_request = self.get_last_request()
         system_prompt = self._get_dynamic_system_prompt()
         
         messages_to_send = []
         if not last_request:
-            # For the first message, we can just use the dynamic prompt directly
             messages_to_send = [system_prompt, self._create_message(message, "user")]
         elif last_request.status in [AiRequest.COMPLETE, AiRequest.FAILED]:
-            # For subsequent messages, rebuild history but inject the NEWEST system prompt
             history = [msg for msg in self.messages() if msg.get("role") != "system"]
             messages_to_send = [system_prompt] + history + [self._create_message(message, "user")]
         else:
-            # A request is already running, do nothing
             return
             
         AiRequest.objects.create(session=self, messages=messages_to_send)

@@ -64,7 +64,50 @@ def update_user_profile_task(session_id, user_message):
 
     except Exception as e:
         print(f"Error during profile update for session {session_id}: {e}")
+# --- UPDATED TASK TO MAKE A DECISION AND RESET THE CYCLE ---
+@shared_task
+def final_style_determination_task(session_id):
+    """
+    Analyzes the most recent batch of messages, makes a stable decision,
+    and then resets the learning cycle.
+    """
+    try:
+        session = models.AiChatSession.objects.get(id=session_id)
+    except models.AiChatSession.DoesNotExist:
+        return
 
+    history = session.user_profile.get("posterior_history", [])
+    if not history:
+        return
+
+    # Use a weighted average on the current batch of messages
+    weights = range(1, len(history) + 1)
+    weighted_sum = sum(p * w for p, w in zip(history, weights))
+    total_weight = sum(weights)
+
+    if total_weight == 0:
+        return
+
+    final_belief = weighted_sum / total_weight
+
+    if final_belief > 0.65:
+        final_style = "action_based"
+    elif final_belief < 0.35:
+        final_style = "relationship_based"
+    else:
+        final_style = "mixed"
+    
+    # Update the style based on this cycle's analysis
+    session.user_profile["preferred_conversation_style"] = final_style
+    
+    # --- RESET THE LEARNING CYCLE ---
+    # Reset message count to start the next 5-message cycle
+    session.user_profile["message_count"] = 0
+    # Clear the history for the next batch of analysis
+    session.user_profile["posterior_history"] = []
+    
+    session.save()
+    print(f"Cycle complete for session {session_id}. New style: {final_style} with belief {final_belief}. Resetting count.")
 
 @shared_task
 def hello_task(name):
