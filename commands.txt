@@ -20,3 +20,5 @@ docker compose run --rm backend sh -c "python manage.py shell"
 >>> session = AiChatSession.objects.create()
 >>> session.send("you are cs note generator")
 session.messages()
+
+pip freeze > requirements.txt
